@@ -5,7 +5,7 @@ This project implements the **Micromarket VDI For Seed - Partner Instructions V2
 ## Overview
 
 The implementation supports bidirectional VDI communication:
-- **Outbound**: Seed → Provider (Markets, Products)
+- **Outbound**: Seed → Provider (Markets)
 - **Inbound**: Provider → Seed (Sales, Kiosks, Collections)
 
 ## VDI Message Types
@@ -13,7 +13,6 @@ The implementation supports bidirectional VDI communication:
 | Type | Direction | Description |
 |------|-----------|-------------|
 | `mms-markets` | Seed → Provider | Market master data |
-| `mms-products` | Seed → Provider | Product catalog data |
 | `mms-sales` | Provider → Seed | Sales transactions |
 | `mms-kiosks` | Provider → Seed | Kiosk information |
 | `mms-collections` | Provider → Seed | Cash collection data |
@@ -70,34 +69,27 @@ curl -X POST http://localhost:5000/send/markets \
   -d '{"operator_id": "nm_swyft"}'
 ```
 
-**Send Products:**
-```bash
-curl -X POST http://localhost:5000/send/products \
-  -H "Content-Type: application/json" \
-  -d '{"operator_id": "nm_swyft"}'
-```
-
 #### Inbound Messages (Provider → Seed)
 
 **Receive Sales:**
 ```bash
 curl -X POST http://localhost:5000/receive/sales \
   -H "Content-Type: text/xml" \
-  --data-binary @sample_sales.xml
+  -d '<VDITransaction>...</VDITransaction>'
 ```
 
 **Receive Kiosks:**
 ```bash
 curl -X POST http://localhost:5000/receive/kiosks \
   -H "Content-Type: text/xml" \
-  --data-binary @sample_kiosks.xml
+  -d '<VDITransaction>...</VDITransaction>'
 ```
 
 **Receive Collections:**
 ```bash
 curl -X POST http://localhost:5000/receive/collections \
   -H "Content-Type: text/xml" \
-  --data-binary @sample_collections.xml
+  -d '<VDITransaction>...</VDITransaction>'
 ```
 
 ## VDI Specification Compliance
@@ -122,11 +114,7 @@ All VDI transactions must include:
    - Provider sends `mms-kiosks` message back to Seed
    - Seed includes Kiosks in subsequent `mms-markets` messages
 
-2. **Product Catalog Updates:**
-   - Seed sends `mms-products` messages with full catalog
-   - Supports both scheduled intervals and automatic updates
-
-3. **Sales Processing:**
+2. **Sales Processing:**
    - Provider sends `mms-sales` messages as transactions occur
    - Includes basket details, payment methods, taxes, and fees
 
@@ -151,7 +139,6 @@ All responses include standardized error messages with details.
 
 Sample payload files are provided in the `payloads/` directory:
 - `market.xml`: Sample markets data
-- `products.xml`: Sample products data
 
 ## Security
 

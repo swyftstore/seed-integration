@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
 from seed_client import send_vdi_message
-from config import VDI_TYPES, DEFAULT_OPERATOR_ID, VDI_CONFIG
+from config import VDI_TYPES, DEFAULT_OPERATOR_ID
 from vdi_configs import (
-    get_market_config, get_product_config, list_available_configs
+    get_market_config, list_available_configs
 )
 import xml.etree.ElementTree as ET
 import re
@@ -87,27 +87,6 @@ def get_config_for_vdi_type(vdi_type, request_data):
             "MARKET_ADDRESS": request_data.get("market_address", config["market_address"]),
             "MARKET_LOCATION": request_data.get("market_location", config["market_location"])
         }
-    elif vdi_type == "products":
-        config = get_product_config(config_name)
-        return {
-            "MARKET_ID": request_data.get("market_id", config["market_id"]),
-            "CATALOG_SIZE": request_data.get("catalog_size", config["catalog_size"]),
-            "PRODUCT_ID": request_data.get("product_id", config["product_id"]),
-            "PRODUCT_NAME": request_data.get("product_name", config["product_name"]),
-            "PRICE": request_data.get("price", config["price"]),
-            "COST": request_data.get("cost", config["cost"]),
-            "PRODUCT_CODE": request_data.get("product_code", config["product_code"]),
-            "CATEGORY": request_data.get("category", config["category"]),
-            "BARCODE": request_data.get("barcode", config["barcode"]),
-            "TAX_ID": request_data.get("tax_id", config["tax_id"]),
-            "TAX_NAME": request_data.get("tax_name", config["tax_name"]),
-            "TAX_RATE": request_data.get("tax_rate", config["tax_rate"]),
-            "TAX_INCLUDED": request_data.get("tax_included", config["tax_included"]),
-            "FEE_ID": request_data.get("fee_id", config["fee_id"]),
-            "FEE_NAME": request_data.get("fee_name", config["fee_name"]),
-            "FEE_VALUE": request_data.get("fee_value", config["fee_value"]),
-            "FEE_TAXABLE": request_data.get("fee_taxable", config["fee_taxable"])
-        }
     else:
         return {}
 
@@ -139,9 +118,6 @@ def get_config_details(vdi_type):
         if vdi_type == "markets":
             from vdi_configs import MARKET_CONFIGS
             return jsonify({"status": "success", "configs": MARKET_CONFIGS})
-        elif vdi_type == "products":
-            from vdi_configs import PRODUCT_CONFIGS
-            return jsonify({"status": "success", "configs": PRODUCT_CONFIGS})
         elif vdi_type == "sales":
             from vdi_configs import SALES_CONFIGS
             return jsonify({"status": "success", "configs": SALES_CONFIGS})
@@ -153,46 +129,6 @@ def get_config_details(vdi_type):
             return jsonify({"status": "success", "configs": COLLECTIONS_CONFIGS})
         else:
             return jsonify({"error": f"Invalid VDI type: {vdi_type}"}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/debug/soap/products", methods=["POST"])
-def debug_soap_products():
-    """Return the exact SOAP XML that would be sent for products"""
-    try:
-        request_data = request.get_json(silent=True) or {}
-        operator_id = request_data.get("operator_id", DEFAULT_OPERATOR_ID)
-        payload_file = request_data.get("payload_file", "payloads/products.xml")
-
-        with open(payload_file, "r") as file:
-            xml_payload = file.read()
-
-        config_data = get_config_for_vdi_type("products", request_data)
-        xml_payload = apply_config_to_payload(xml_payload, config_data)
-
-        from soap_helpers import create_vdi_transaction, wrap_in_soap
-        import uuid
-        from datetime import datetime
-
-        transaction_id = str(uuid.uuid4())
-        transaction_time = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-
-        vdi_transaction = create_vdi_transaction(
-            vdi_type=VDI_TYPES["products"],
-            provider_id=VDI_CONFIG["provider_id"],
-            application_id=VDI_CONFIG["application_id"],
-            application_version=VDI_CONFIG["application_version"],
-            operator_id=operator_id,
-            transaction_id=transaction_id,
-            transaction_time=transaction_time,
-            vdi_content=xml_payload
-        )
-
-        soap_xml = wrap_in_soap(vdi_transaction)
-        return jsonify({
-            "soap": soap_xml,
-            "headers": {"Content-Type": "text/xml; charset=utf-8", "SOAPAction": ""}
-        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
