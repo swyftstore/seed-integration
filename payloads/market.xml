@@ -1,0 +1,7 @@
+<MarketsCollection>
+  <Market MarketID="{{MARKET_ID}}" MarketName="{{MARKET_NAME}}" MarketAddress="{{MARKET_ADDRESS}}" MarketLocation="{{MARKET_LOCATION}}" ClientID="{{CLIENT_ID}}" ClientName="{{CLIENT_NAME}}">
+    <Kiosks>
+      <Kiosk KioskID="{{MARKET_ID}}-K"/>
+    </Kiosks>
+  </Market>
+</MarketsCollection>
