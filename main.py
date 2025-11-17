@@ -52,17 +52,20 @@ async def receive_vdi(request: Request, user: str = Depends(verify_auth)):
             print(f"⚠️ Unknown VDI Type: {vdi_type}")
 
         # Respond OK
-        response_xml = """<?xml version="1.0" encoding="utf-8"?>
-        <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-          <soap:Body>
-            <VDIResponse>
+       response_xml = """<?xml version="1.0" encoding="utf-8"?>
+      <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+        <soap:Body>
+          <VDIDataExchangeResponse xmlns="urn:VDIDataExchangeService">
+            <VDIDataExchangeResult>
               <ResultCode>0</ResultCode>
               <ResultDescription>OK</ResultDescription>
-            </VDIResponse>
-          </soap:Body>
-        </soap:Envelope>"""
+            </VDIDataExchangeResult>
+          </VDIDataExchangeResponse>
+        </soap:Body>
+      </soap:Envelope>"""
 
-        return Response(content=response_xml, media_type="text/xml")
+              return Response(content=response_xml, media_type="text/xml")
+
 
     except Exception as e:
         print("❌ XML Parse Error:", e)
