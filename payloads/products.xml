@@ -1,0 +1,19 @@
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+	<s:Body>
+		<VDIDataExchange xmlns="urn:VDIDataExchangeService">
+			<VDIXMLVersion>1</VDIXMLVersion>
+			<VDIXMLType>mms-products</VDIXMLType>
+			<ProviderID>CANTALOUPE</ProviderID>
+			<ApplicationID>SyncVdiMicromarkets.Uploader</ApplicationID>
+			<ApplicationVersion>240.0.7211.0</ApplicationVersion>
+			<TransactionID>303feabc-f9ec-4cad-a9b3-b6fdba879441</TransactionID>
+			<TransactionTime>2025-11-14T18:34:10.7000000Z</TransactionTime>
+			<OperatorID>nm_swyft</OperatorID>
+			<CompressionType a:nil="true" xmlns:a="http://www.w3.org/2001/XMLSchema-instance"/>
+			<CompressionParam a:nil="true" xmlns:a="http://www.w3.org/2001/XMLSchema-instance"/>
+			<Encoding>utf-8</Encoding>
+			<VDIXML>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;&lt;VDITransaction xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot; VDIXMLVersion=&quot;1&quot; VDIXMLType=&quot;mms-products&quot; ProviderID=&quot;CANTALOUPE&quot; ApplicationID=&quot;SyncVdiMicromarkets.Uploader&quot; ApplicationVersion=&quot;240.0.7211.0&quot; OperatorID=&quot;nm_swyft&quot; TransactionID=&quot;303feabc-f9ec-4cad-a9b3-b6fdba879441&quot; TransactionTime=&quot;2025-11-14T18:34:10.7Z&quot;&gt;&lt;MarketsCollection&gt;&lt;Market MarketID=&quot;2&quot; CatalogSize=&quot;Full&quot;&gt;&lt;ProductsUpdate&gt;&lt;Product ProductID=&quot;828&quot; ProductName=&quot;SMITHS CRINKLE CHICKEN 45G&quot; Price=&quot;3&quot; Cost=&quot;0.85&quot; ProductCode=&quot;8206&quot; Category=&quot;Chips&quot;&gt;&lt;Codes&gt;&lt;Code&gt;9310015233562&lt;/Code&gt;&lt;/Codes&gt;&lt;Taxes&gt;&lt;Tax ID=&quot;300&quot; Name=&quot;3.00 % tax&quot; Rate=&quot;0.03000&quot; IncludedInPrice=&quot;0&quot; /&gt;&lt;/Taxes&gt;&lt;Fees&gt;&lt;Fee ID=&quot;3000&quot; Name=&quot;$0.3 bottle deposit&quot; Value=&quot;0.3&quot; IsTaxable=&quot;false&quot; /&gt;&lt;/Fees&gt;&lt;/Product&gt;&lt;Product ProductID=&quot;840&quot; ProductName=&quot;BARISTA BROS CHOCOLATE 500ML&quot; Price=&quot;1&quot; Cost=&quot;1.963&quot; ProductCode=&quot;101004&quot; Category=&quot;FLAVOURED MILK&quot;&gt;&lt;Codes&gt;&lt;Code&gt;9300624024675&lt;/Code&gt;&lt;/Codes&gt;&lt;Taxes&gt;&lt;Tax ID=&quot;300&quot; Name=&quot;3.00 % tax&quot; Rate=&quot;0.03000&quot; IncludedInPrice=&quot;0&quot; /&gt;&lt;/Taxes&gt;&lt;Fees&gt;&lt;Fee ID=&quot;3000&quot; Name=&quot;$0.3 bottle deposit&quot; Value=&quot;0.3&quot; IsTaxable=&quot;false&quot; /&gt;&lt;/Fees&gt;&lt;/Product&gt;&lt;/ProductsUpdate&gt;&lt;/Market&gt;&lt;Market MarketID=&quot;4&quot; CatalogSize=&quot;Full&quot;&gt;&lt;ProductsUpdate&gt;&lt;Product ProductID=&quot;840&quot; ProductName=&quot;BARISTA BROS CHOCOLATE 500ML&quot; Price=&quot;1&quot; Cost=&quot;1.963&quot; ProductCode=&quot;101004&quot; Category=&quot;FLAVOURED MILK&quot;&gt;&lt;Codes&gt;&lt;Code&gt;9300624024675&lt;/Code&gt;&lt;/Codes&gt;&lt;Taxes&gt;&lt;Tax ID=&quot;300&quot; Name=&quot;3.00 % tax&quot; Rate=&quot;0.03000&quot; IncludedInPrice=&quot;0&quot; /&gt;&lt;/Taxes&gt;&lt;Fees&gt;&lt;Fee ID=&quot;3000&quot; Name=&quot;$0.3 bottle deposit&quot; Value=&quot;0.3&quot; IsTaxable=&quot;false&quot; /&gt;&lt;/Fees&gt;&lt;/Product&gt;&lt;/ProductsUpdate&gt;&lt;/Market&gt;&lt;/MarketsCollection&gt;&lt;/VDITransaction&gt;</VDIXML>
+			<UserData a:nil="true" xmlns:a="http://www.w3.org/2001/XMLSchema-instance"/>
+		</VDIDataExchange>
+	</s:Body>
+</s:Envelope>

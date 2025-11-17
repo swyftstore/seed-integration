@@ -1,7 +1,19 @@
-<MarketsCollection>
-  <Market MarketID="{{MARKET_ID}}" MarketName="{{MARKET_NAME}}" MarketAddress="{{MARKET_ADDRESS}}" MarketLocation="{{MARKET_LOCATION}}" ClientID="{{CLIENT_ID}}" ClientName="{{CLIENT_NAME}}">
-    <Kiosks>
-      <Kiosk KioskID="{{MARKET_ID}}-K"/>
-    </Kiosks>
-  </Market>
-</MarketsCollection>
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+	<s:Body>
+		<VDIDataExchange xmlns="urn:VDIDataExchangeService">
+			<VDIXMLVersion>1</VDIXMLVersion>
+			<VDIXMLType>mms-markets</VDIXMLType>
+			<ProviderID>CANTALOUPE</ProviderID>
+			<ApplicationID>SyncVdiMicromarkets.Uploader</ApplicationID>
+			<ApplicationVersion>240.0.7211.0</ApplicationVersion>
+			<TransactionID>bd6eaca2-fd8b-4193-a4e9-6ac263cd7cc2</TransactionID>
+			<TransactionTime>2025-11-14T18:34:26.1200000Z</TransactionTime>
+			<OperatorID>nm_swyft</OperatorID>
+			<CompressionType a:nil="true" xmlns:a="http://www.w3.org/2001/XMLSchema-instance"/>
+			<CompressionParam a:nil="true" xmlns:a="http://www.w3.org/2001/XMLSchema-instance"/>
+			<Encoding>utf-8</Encoding>
+			<VDIXML>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;&lt;VDITransaction xmlns:xsi=&quot;http://www.w3.org/2001/XMLSchema-instance&quot; xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot; VDIXMLVersion=&quot;1&quot; VDIXMLType=&quot;mms-markets&quot; ProviderID=&quot;CANTALOUPE&quot; ApplicationID=&quot;SyncVdiMicromarkets.Uploader&quot; ApplicationVersion=&quot;240.0.7211.0&quot; OperatorID=&quot;nm_swyft&quot; TransactionID=&quot;bd6eaca2-fd8b-4193-a4e9-6ac263cd7cc2&quot; TransactionTime=&quot;2025-11-14T18:34:26.12Z&quot;&gt;&lt;MarketsCollection&gt;&lt;Market MarketID=&quot;2&quot; MarketName=&quot;Test Swyft Location - breakroom&quot; MarketAddress=&quot;123 swyft st, swyft, GA, 30328&quot; MarketLocation=&quot;Test Swyft Location&quot; ClientID=&quot;1001&quot; ClientName=&quot;Test Swyft Customer&quot; /&gt;&lt;Market MarketID=&quot;4&quot; MarketName=&quot;Test Swyft Location - Terminal B - CVS&quot; MarketAddress=&quot;123 swyft st, swyft, GA, 30328&quot; MarketLocation=&quot;Test Swyft Location&quot; ClientID=&quot;1001&quot; ClientName=&quot;Test Swyft Customer&quot; /&gt;&lt;/MarketsCollection&gt;&lt;/VDITransaction&gt;</VDIXML>
+			<UserData a:nil="true" xmlns:a="http://www.w3.org/2001/XMLSchema-instance"/>
+		</VDIDataExchange>
+	</s:Body>
+</s:Envelope>
