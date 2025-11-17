@@ -43,7 +43,8 @@ async def receive_vdi(request: Request, user: str = Depends(verify_auth)):
             print(f"⚠️ Unknown VDI Type: {vdi_type}")
 
         # Respond OK
-        response_xml = """<?xml version="1.0" encoding="utf-8"?>
+        response_xml = """
+        <?xml version="1.0" encoding="utf-8"?>
         <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
             <soap:Body>
             <VDIDataExchangeResponse xmlns="urn:VDIDataExchangeService">
@@ -53,7 +54,8 @@ async def receive_vdi(request: Request, user: str = Depends(verify_auth)):
                 </VDIDataExchangeResult>
             </VDIDataExchangeResponse>
             </soap:Body>
-        </soap:Envelope>"""
+        </soap:Envelope>
+        """
 
         return Response(content=response_xml, media_type="text/xml")
     except Exception as e:
