@@ -34,19 +34,10 @@ async def receive_vdi(request: Request, user: str = Depends(verify_auth)):
         print(f"📩 Received VDI Type: {vdi_type}")
 
         if vdi_type == "mms-markets":
-            markets = root.findall(".//Market")
-            for m in markets:
-                attributes = m.attrib
-                market_id = attributes.get("MarketID")
-                market_name = attributes.get("MarketName")
-                client_id = attributes.get("ClientID")
-                client_name = attributes.get("ClientName")
-                print(f"  → Market: {market_id} | {market_name}")
-                print(f"  → Client: {client_id} | {client_name}")
+            pass
 
         elif vdi_type == "mms-products":
-            products = root.findall(".//Product")
-            print(f"  → Received {len(products)} products")
+            pass
 
         else:
             print(f"⚠️ Unknown VDI Type: {vdi_type}")
