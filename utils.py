@@ -1,8 +1,66 @@
 import html
 import xml.etree.ElementTree as ET
 import pandas as pd
+import xml.sax.saxutils as sax
+from datetime import datetime, timezone
 
 dry_run = True
+
+def get_seed_timestamp():
+    # datetime with microseconds → pad to 7 digits
+    now = datetime.now(timezone.utc)
+    # format: YYYY-MM-DDTHH:MM:SS.microseconds + one extra 0 + Z
+    # return now.strftime("%Y-%m-%dT%H:%M:%S.%f") + "0Z"
+    return now.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def generate_kiosk_soap():
+    utc_now = get_seed_timestamp()
+    xml_version = 1
+    xml_type = "mms-kiosks"
+    provider_id = "swyft"
+    application_id = "swyft-vdi-integration"
+    application_version = "1.0"
+    transaction_id = "e3c9a5b2-7f92-4c51-9ac9-223b7df963af"
+    transaction_time = "2025-11-18T07:04:06.4288410Z"
+    operator_id = "nm_swyft"
+    market_id = "2"
+    kiosk_id = "PY-KIOSK"
+    kiosk_sn = "PY0001"
+    kiosk_last_sync = "2025-11-18T07:04:06.4288410Z"
+    kiosk_last_transaction = "2025-11-18T07:04:06.4288410Z"
+    kiosk_catalog_version = "2025-11-18T07:04:06.4288410Z"
+
+    soap_xml = f"""
+        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:VDIDataExchangeService">
+        <soapenv:Header/>
+        <soapenv:Body>
+            <VDIDataExchange xmlns="urn:VDIDataExchangeService" xmlns:ns2="http://schemas.microsoft.com/2003/10/Serialization/">
+                <VDIXMLVersion>{xml_version}</VDIXMLVersion>
+                <VDIXMLType>{xml_type}</VDIXMLType>
+                <ProviderID>{provider_id}</ProviderID>
+                <ApplicationID>{application_id}</ApplicationID>
+                <ApplicationVersion>{application_version}</ApplicationVersion>
+                <TransactionID>{transaction_id}</TransactionID>
+                <TransactionTime>{transaction_time}</TransactionTime>
+                <OperatorID>{operator_id}</OperatorID>
+
+                <CompressionType xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"/>
+                <CompressionParam xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"/>
+                <Encoding>utf-8</Encoding>
+
+                <VDIXML xmlns:ns3="urn:VDIDataExchangeService">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+    &lt;VDITransaction xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot; VDIXMLVersion=&quot;{xml_version}&quot; VDIXMLType=&quot;{xml_type}&quot; ProviderID=&quot;{provider_id}&quot; ApplicationID=&quot;{application_id}&quot; ApplicationVersion=&quot;{application_version}&quot; TransactionID=&quot;{transaction_id}&quot; TransactionTime=&quot;{transaction_time}&quot; OperatorID=&quot;{operator_id}&quot;&gt;
+        &lt;KiosksCollection&gt;
+            &lt;Kiosk MarketID=&quot;{market_id}&quot; KioskID=&quot;{kiosk_id}&quot; KioskSN=&quot;{kiosk_sn}&quot; LastSync=&quot;{kiosk_last_sync}&quot; LastTransaction=&quot;{kiosk_last_transaction}&quot; CatalogVersion=&quot;{kiosk_catalog_version}&quot; /&gt;
+        &lt;/KiosksCollection&gt;
+    &lt;/VDITransaction&gt;</VDIXML>
+
+                <UserData xmlns:ns3="urn:VDIDataExchangeService" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"/>
+            </VDIDataExchange>
+        </soapenv:Body>
+    </soapenv:Envelope>
+    """
+    return soap_xml
 
 
 def save_df(df, name):
@@ -258,17 +316,23 @@ def parse_seed_products_soap(xml_text: str):
 
 # Example run
 if __name__ == "__main__":
-    soap_input = None
-    fp = "payloads/market.xml"
-    # fp = "payloads/products.xml"
-    with open(fp) as f:
-        soap_input = f.read()
+    # soap_input = None
+    # fp = "payloads/market.xml"
+    # # fp = "payloads/products.xml"
+    # with open(fp) as f:
+    #     soap_input = f.read()
 
-    result = parse_seed_markets_soap(soap_input)
-    for name, df in result.items():
-        print("\n----", name, "----")
-        print(df)
+    # result = parse_seed_markets_soap(soap_input)
+    # for name, df in result.items():
+    #     print("\n----", name, "----")
+    #     print(df)
 
     # dfs = parse_seed_products_soap(soap_input)
     # for name, df in dfs.items():
     #     print(name, df.head())
+
+    # data = generate_kiosk_soap()
+    # with open('data/mms-kiosks.xml', 'w') as f:
+    #     f.write(data)
+
+    print(get_seed_timestamp())
