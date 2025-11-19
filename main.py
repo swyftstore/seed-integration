@@ -60,17 +60,13 @@ async def receive_vdi(request: Request, user: str = Depends(verify_auth)):
 
         # Respond OK
         response_xml = """
-        <?xml version="1.0" encoding="utf-8"?>
-        <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-            <soap:Body>
-            <VDIDataExchangeResponse xmlns="urn:VDIDataExchangeService">
-                <VDIDataExchangeResult>
-                <ResultCode>0</ResultCode>
-                <ResultDescription>OK</ResultDescription>
-                </VDIDataExchangeResult>
-            </VDIDataExchangeResponse>
-            </soap:Body>
-        </soap:Envelope>
+        <s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+            <s:Body>
+                <VDIDataExchangeResponse xmlns="urn:VDIDataExchangeService">
+                    <VDIDataExchangeResult>SUCCESS</VDIDataExchangeResult>
+                </VDIDataExchangeResponse>
+            </s:Body>
+        </s:Envelope>
         """
 
         return Response(content=response_xml, media_type="text/xml")
