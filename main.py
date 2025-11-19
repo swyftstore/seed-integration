@@ -1,9 +1,11 @@
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import Response
-from lxml import etree
+
+import xml.etree.ElementTree as ET
 import os
 from dotenv import load_dotenv
+from utils import parse_seed_markets_soap, parse_seed_products_soap
 
 load_dotenv()
 
@@ -29,15 +31,29 @@ async def receive_vdi(request: Request, user: str = Depends(verify_auth)):
     print(xml_str)
 
     try:
-        root = etree.fromstring(xml_str.encode())
-        vdi_type = root.attrib.get("VDIXMLType", "unknown")
+        # Ensure proper XML formatting
+        xml_text = xml_text.strip()
+
+        # Parse SOAP envelope
+        root = ET.fromstring(xml_text)
+            # Namespaces
+        ns = {
+            "s": "http://schemas.xmlsoap.org/soap/envelope/",
+            "v": "urn:VDIDataExchangeService"
+        }
+        # Extract the inner <VDIXML> block from SOAP
+        vdixml_type_el = root.find(".//v:VDIXMLType", ns)
+        if vdixml_type_el is None:
+            raise ValueError("Cannot find <VDIXMLType> inside SOAP response")
+
+        vdi_type = vdixml_type_el.text
         print(f"📩 Received VDI Type: {vdi_type}")
 
         if vdi_type == "mms-markets":
-            pass
+            parse_seed_markets_soap(xml_str)
 
         elif vdi_type == "mms-products":
-            pass
+            parse_seed_products_soap(xml_str)
 
         else:
             print(f"⚠️ Unknown VDI Type: {vdi_type}")
