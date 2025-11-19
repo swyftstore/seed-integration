@@ -72,16 +72,13 @@ def save_df(df, name):
     fp = f"data/{name}"
     df.to_csv(fp, index=False)
 
-def parse_seed_markets_soap(xml_text: str):
-    """
-    Parse Seed SOAP markets response:
-    - Extract <VDIXML> inner escaped XML
-    - Parse mms-markets VDITransaction
-    Returns two DataFrames:
-      1. transaction_df
-      2. markets_df
-    """
 
+def get_vdixml_el(xml_text: str):
+    """_summary_
+
+    Args:
+        xml_text (str): _description_
+    """
     # Ensure proper XML formatting
     xml_text = xml_text.strip()
 
@@ -106,6 +103,19 @@ def parse_seed_markets_soap(xml_text: str):
     # Unescape & parse inner VDITransaction XML
     inner_xml = html.unescape(inner_xml_escaped)
     inner_root = ET.fromstring(inner_xml)
+    return inner_root
+
+def parse_seed_markets_soap(xml_text: str):
+    """
+    Parse Seed SOAP markets response:
+    - Extract <VDIXML> inner escaped XML
+    - Parse mms-markets VDITransaction
+    Returns two DataFrames:
+      1. transaction_df
+      2. markets_df
+    """
+
+    inner_root = get_vdixml_el(xml_text)
 
     # Extract transaction-level info
     tx = {
@@ -159,29 +169,7 @@ def parse_seed_products_soap(xml_text: str):
       - fees
     """
 
-    xml_text = xml_text.strip()
-
-    # Namespaces
-    ns = {
-        "s": "http://schemas.xmlsoap.org/soap/envelope/",
-        "v": "urn:VDIDataExchangeService"
-    }
-
-    # Parse SOAP Envelope
-    root = ET.fromstring(xml_text)
-
-    # Extract the escaped inner VDI XML
-    vdi_xml_el = root.find(".//v:VDIXML", ns)
-    if vdi_xml_el is None:
-        raise ValueError("Cannot find <VDIXML> inside SOAP response")
-
-    escaped_inner_xml = vdi_xml_el.text
-    if not escaped_inner_xml:
-        raise ValueError("<VDIXML> exists but is empty")
-
-    # Unescape & parse actual mms-products XML
-    inner_xml = html.unescape(escaped_inner_xml)
-    inner_root = ET.fromstring(inner_xml)
+    inner_root = get_vdixml_el(xml_text)
 
     # ---------------------------
     # 1) Transaction metadata
