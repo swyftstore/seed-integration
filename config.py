@@ -12,11 +12,11 @@ AUTH = {
 
 # VDI Configuration
 VDI_CONFIG = {
-    "provider_id": "SWIFT",  # Provider ID for outbound messages (from Seed)
-    "application_id": "SyncVdiMicromarkets.Uploader",
-    "application_version": "232.0.4572.0",  # Updated to match SEED version
+    "provider_id": "swyft",  # Provider ID for outbound messages
+    "application_id": "swyft-vdi-integration",
+    "application_version": "1.0",
     "vdi_xml_version": "1",
-    "encoding": "UTF-8"
+    "encoding": "utf-8"
 }
 
 # Default Operator ID
