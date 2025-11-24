@@ -1,13 +1,16 @@
+import logging
 from flask import Flask, request, jsonify
-from seed_client import send_vdi_message
-from config import VDI_TYPES, DEFAULT_OPERATOR_ID
+from seed_client import send_vdi_message, send_vdi_dataexchange
+from config import VDI_TYPES, DEFAULT_OPERATOR_ID, SEED_ENDPOINTS
 from vdi_configs import (
     get_market_config, list_available_configs
 )
+from sales_template import build_vdi_dataexchange_from_json
 import xml.etree.ElementTree as ET
 import re
 
 app = Flask(__name__)
+app.logger.setLevel(logging.INFO)
 
 
 @app.route("/send/markets", methods=["POST"])
@@ -50,11 +53,27 @@ def handle_vdi_send(vdi_type, request):
         config_data = get_config_for_vdi_type(vdi_type, request_data)
         xml_payload = apply_config_to_payload(xml_payload, config_data)
         
+        app.logger.info(
+            "Sending VDI message",
+            extra={
+                "vdi_type": vdi_type,
+                "operator_id": operator_id,
+                "payload_file": payload_file
+            }
+        )
         # Send VDI message
         status, response = send_vdi_message(
             vdi_type=VDI_TYPES[vdi_type],
             vdi_content=xml_payload,
             operator_id=operator_id
+        )
+        app.logger.info(
+            "VDI message sent",
+            extra={
+                "vdi_type": vdi_type,
+                "operator_id": operator_id,
+                "status": status
+            }
         )
         
         return jsonify({
@@ -67,8 +86,13 @@ def handle_vdi_send(vdi_type, request):
         })
         
     except FileNotFoundError:
+        app.logger.exception("Payload file not found", extra={"payload_file": payload_file})
         return jsonify({"error": f"Payload file not found: {payload_file}"}), 404
+    except ValueError as ve:
+        app.logger.warning("Validation error while sending VDI", extra={"error": str(ve)})
+        return jsonify({"error": str(ve)}), 400
     except Exception as e:
+        app.logger.exception("Unexpected error while sending VDI", extra={"vdi_type": vdi_type})
         return jsonify({"error": str(e)}), 500
 
 def get_config_for_vdi_type(vdi_type, request_data):
@@ -132,37 +156,54 @@ def get_config_details(vdi_type):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route("/receive/sales", methods=["POST"])
-def receive_sales():
-    """Receive mms-sales messages from Provider to Seed"""
+@app.route("/send/sales", methods=["POST"])
+def send_sales():
+    """Send sales VDI message to SEED test environment endpoint (SOAP)"""
     try:
-        # Parse incoming VDI message
-        xml_data = request.get_data(as_text=True)
-        root = ET.fromstring(xml_data)
+        request_data = request.get_json(silent=True)
+        if not request_data:
+            return jsonify({"error": "JSON payload is required"}), 400
 
-        # Namespace/SOAP agnostic search for VDITransaction
-        def find_by_localname(node, local):
-            for el in node.iter():
-                if el.tag.split('}')[-1] == local:
-                    return el
-            return None
-        vdi_transaction = find_by_localname(root, 'VDITransaction')
-        if vdi_transaction is None:
-            return jsonify({"error": "Invalid VDI message format"}), 400
-        
-        # Process sales data
-        sales_data = process_sales_message(vdi_transaction)
-        
+        sales_payload = request_data.get("Sales") or request_data.get("sales") or request_data.get("sale")
+        if isinstance(sales_payload, dict) and "Sale" in sales_payload:
+            sale_count = len(sales_payload["Sale"]) if isinstance(sales_payload["Sale"], list) else 1
+        elif isinstance(sales_payload, list):
+            sale_count = len(sales_payload)
+        elif isinstance(sales_payload, dict):
+            sale_count = 1e4
+        else:
+            sale_count = 0
+
+        app.logger.info(
+            "Received sales send request",
+            extra={"sale_count": sale_count}
+        )
+
+        environment = "test"
+
+        vdi_dataexchange_xml = build_vdi_dataexchange_from_json(request_data, "mms-sales")
+
+        status, response = send_vdi_dataexchange(vdi_dataexchange_xml, environment)
+
+        app.logger.info(
+            "Sales message sent",
+            extra={"sale_count": sale_count, "status": status}
+        )
+
         return jsonify({
-            "status": "success",
-            "message": "Sales data received and processed",
-            "data": sales_data
+            "status": status,
+            "response": response,
+            "environment": environment,
+            "endpoint": SEED_ENDPOINTS[environment]
         })
-        
-    except ET.ParseError:
-        return jsonify({"error": "Invalid XML format"}), 400
+
+    except ValueError as ve:
+        app.logger.warning("Invalid sales payload", extra={"error": str(ve)})
+        return jsonify({"error": str(ve)}), 400
     except Exception as e:
+        app.logger.exception("Sales send failed")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/receive/kiosks", methods=["POST"])
 def receive_kiosks():
