@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 import os
 from dotenv import load_dotenv
 from utils import parse_seed_markets_soap, parse_seed_products_soap
-from gcp_utils import TABLES, load_markets_to_bigquery
+from gcp_utils import TABLES, load_to_bigquery
 
 load_dotenv()
 
@@ -33,10 +33,10 @@ async def receive_vdi(request: Request, user: str = Depends(verify_auth)):
 
     try:
         # Ensure proper XML formatting
-        xml_text = xml_text.strip()
+        xml_str = xml_str.strip()
 
         # Parse SOAP envelope
-        root = ET.fromstring(xml_text)
+        root = ET.fromstring(xml_str)
             # Namespaces
         ns = {
             "s": "http://schemas.xmlsoap.org/soap/envelope/",
@@ -52,12 +52,28 @@ async def receive_vdi(request: Request, user: str = Depends(verify_auth)):
 
         if vdi_type == "mms-markets":
             data = parse_seed_markets_soap(xml_str)
+            markets_df = data['markets']
             table_id = TABLES.get("vdi_markets_info")
-            load_markets_to_bigquery(table_id, data['markets'])
+            load_to_bigquery(table_id, markets_df)
 
         elif vdi_type == "mms-products":
-            parse_seed_products_soap(xml_str)
+            data = parse_seed_products_soap(xml_str)
+            products_df = data["products"]
+            product_codes = data["product_codes"]
+            product_taxes = data["product_taxes"]
+            product_fees = data['product_fees']
 
+            keys = ["MarketID", "ProductID", "TransactionID"]
+            
+            merge_df = products_df.merge(product_codes, on=keys, how="inner")
+            merge_df = merge_df.merge(product_taxes, on=keys, how="inner")
+            merge_df = merge_df.merge(product_fees, on=keys, how="inner")
+            # do type-conversions
+            merge_df['FeeID'] = merge_df['FeeID'].astype(str)
+            merge_df['TaxID'] = merge_df['TaxID'].astype(str)
+            # get table id
+            table_id = TABLES.get("vdi_products")
+            load_to_bigquery(table_id, merge_df)
         else:
             print(f"⚠️ Unknown VDI Type: {vdi_type}")
 
