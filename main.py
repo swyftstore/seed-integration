@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 import os
 from dotenv import load_dotenv
 from utils import parse_seed_markets_soap, parse_seed_products_soap
+from gcp_utils import TABLES, load_markets_to_bigquery
 
 load_dotenv()
 
@@ -50,7 +51,9 @@ async def receive_vdi(request: Request, user: str = Depends(verify_auth)):
         print(f"📩 Received VDI Type: {vdi_type}")
 
         if vdi_type == "mms-markets":
-            parse_seed_markets_soap(xml_str)
+            data = parse_seed_markets_soap(xml_str)
+            table_id = TABLES.get("vdi_markets_info")
+            load_markets_to_bigquery(table_id, data['markets'])
 
         elif vdi_type == "mms-products":
             parse_seed_products_soap(xml_str)

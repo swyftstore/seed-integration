@@ -50,16 +50,18 @@ SCHEMA_DATA = {
 
 }
 
-def load_markets_to_bigquery(dfs, if_exists="append"):
-    for name, df in dfs.items():
-        if df.empty:
-            continue
-        to_gbq(
-            df,
-            TABLES[name],
-            project_id=PROJECT_ID,
-            if_exists=if_exists
-        )
+def load_markets_to_bigquery(table_id, df, if_exists="append"):
+    # ensure table exists before adding data
+    create_table(table_id)
+    # add data
+    if df.empty:
+        return
+    to_gbq(
+        df,
+        table_id,
+        project_id=PROJECT_ID,
+        if_exists=if_exists
+    )
 
 def create_table(table_id: str):
     """
