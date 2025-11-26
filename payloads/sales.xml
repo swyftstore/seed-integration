@@ -3,7 +3,7 @@
     <soapenv:Body>
         <VDIDataExchange xmlns="urn:VDIDataExchangeService" xmlns:ns2="http://schemas.microsoft.com/2003/10/Serialization/">
             <VDIXMLVersion>1</VDIXMLVersion>
-            <VDIXMLType>mms-kiosks</VDIXMLType>
+            <VDIXMLType>mms-sales</VDIXMLType>
             <ProviderID>swyft</ProviderID>
             <ApplicationID>swyft-vdi-integration</ApplicationID>
             <ApplicationVersion>1.0</ApplicationVersion>
@@ -16,10 +16,29 @@
             <Encoding>utf-8</Encoding>
 
             <VDIXML xmlns:ns3="urn:VDIDataExchangeService">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
-&lt;VDITransaction xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot; VDIXMLVersion=&quot;1&quot; VDIXMLType=&quot;mms-kiosks&quot; ProviderID=&quot;swyft&quot; ApplicationID=&quot;swyft-app-id&quot; ApplicationVersion=&quot;1.0&quot; TransactionID=&quot;e3c9a5b2-7f92-4c51-9ac9-223b7df963af&quot; TransactionTime=&quot;2025-11-18T07:04:06.4288410Z&quot; OperatorID=&quot;nm_swyft&quot;&gt;
-    &lt;KiosksCollection&gt;
-        &lt;Kiosk MarketID=&quot;2&quot; KioskID=&quot;2-K swyft&quot; KioskSN=&quot;PY0001&quot; LastSync=&quot;2025-11-18T07:04:06.4288410Z&quot; LastTransaction=&quot;2025-11-18T07:04:06.4288410Z&quot; CatalogVersion=&quot;2025-11-18T07:04:06.4288410Z&quot; /&gt;
-    &lt;/KiosksCollection&gt;
+&lt;VDITransaction xmlns:xsd=&quot;http://www.w3.org/2001/XMLSchema&quot; VDIXMLVersion=&quot;1&quot; VDIXMLType=&quot;mms-sales&quot; ProviderID=&quot;swyft&quot; ApplicationID=&quot;swyft-app-id&quot; ApplicationVersion=&quot;1.0&quot; TransactionID=&quot;e3c9a5b2-7f92-4c51-9ac9-223b7df96377&quot; TransactionTime=&quot;2025-11-18T07:04:06.4288410Z&quot; OperatorID=&quot;nm_swyft&quot;&gt;
+    &lt;Sales&gt;
+    &lt;Sale MarketID=&quot;2&quot; KioskID=&quot;2-K swyft&quot; SaleID=&quot;11312e2d-224c-4447-ab00-d71a4687b99&quot; SaleTime=&quot;2025-11-18T09:32:26-04:00&quot;&gt;
+      &lt;Summary Price=&quot;1.00&quot; Discount=&quot;0.00&quot; Total=&quot;1.00&quot;&gt;
+        &lt;Fees Total=&quot;0.00&quot;/&gt;
+        &lt;Taxes Total=&quot;0.18&quot;/&gt;
+      &lt;/Summary&gt;
+
+      &lt;Items&gt;
+        &lt;Item ProductID=&quot;840&quot; Code=&quot;101004&quot; Quantity=&quot;1&quot; Price=&quot;1.00&quot; Cost=&quot;0.00&quot; Total=&quot;1.00&quot;&gt;
+          &lt;Fees Total=&quot;0.00&quot;/&gt;
+          &lt;Taxes Total=&quot;0.18&quot;&gt;
+            &lt;Tax Name=&quot;Example Tax&quot; Rate=&quot;0.07&quot; Value=&quot;0.18&quot; Count=&quot;1&quot; Total=&quot;0.18&quot;/&gt;
+          &lt;/Taxes&gt;
+        &lt;/Item&gt;
+      &lt;/Items&gt;
+
+      &lt;Tenders&gt;
+        &lt;Tender Type=&quot;CARD&quot; Amount=&quot;1&quot;/&gt;
+      &lt;/Tenders&gt;
+
+    &lt;/Sale&gt;
+  &lt;/Sales&gt;
 &lt;/VDITransaction&gt;</VDIXML>
 
             <UserData xmlns:ns3="urn:VDIDataExchangeService" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:nil="true"/>
