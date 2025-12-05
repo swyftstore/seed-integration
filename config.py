@@ -30,3 +30,14 @@ VDI_TYPES = {
     "kiosks": "mms-kiosks",
     "collections": "mms-collections"
 }
+
+# ActiveMQ Configuration - STOMP 1.0
+# Note: For client connections, use "localhost" or "127.0.0.1" (not "0.0.0.0" which is for server binding)
+# Protocol: STOMP 1.0
+ACTIVEMQ_CONFIG = {
+    "host": os.getenv("ACTIVEMQ_HOST", "localhost"),
+    "stomp_port": int(os.getenv("ACTIVEMQ_PORT", "61613")),  # STOMP port (default: 61613 - standard STOMP port)
+    "username": os.getenv("ACTIVEMQ_USERNAME", ""),
+    "password": os.getenv("ACTIVEMQ_PASSWORD", ""),
+    "topic": os.getenv("ACTIVEMQ_TOPIC", "com.zoomsystems.common.PythonConsumerTopic")
+}

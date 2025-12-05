@@ -4,3 +4,5 @@ python-dotenv
 lxml
 pandas
 pandas-gbq
+stomp.py
+requests
