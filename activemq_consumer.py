@@ -6,6 +6,11 @@ This module provides a consumer that listens to ActiveMQ topic:
 
 Protocol: STOMP 1.0 (uses Connection10 for ActiveMQ Classic compatibility)
 Connection: tcp://localhost:61613 (STOMP port)
+
+Features:
+- Durable subscription: Messages are stored when consumer is offline
+- Messages are delivered when consumer reconnects
+- No message loss during maintenance/shutdown
 """
 import time
 import logging
@@ -97,6 +102,8 @@ class ActiveMQConsumer:
         username: str = None,
         password: str = None,
         topic: str = None,
+        client_id: str = None,
+        subscription_name: str = None,
         message_handler: Optional[Callable] = None
     ):
         """
@@ -108,6 +115,8 @@ class ActiveMQConsumer:
             username: ActiveMQ username (defaults to config)
             password: ActiveMQ password (defaults to config)
             topic: Topic name to subscribe to (defaults to config)
+            client_id: Client ID for durable subscription (defaults to config)
+            subscription_name: Durable subscription name (defaults to config)
             message_handler: Optional callback function to handle messages
         """
         self.host = host or ACTIVEMQ_CONFIG["host"]
@@ -115,6 +124,8 @@ class ActiveMQConsumer:
         self.username = username or ACTIVEMQ_CONFIG["username"]
         self.password = password or ACTIVEMQ_CONFIG["password"]
         self.topic = topic or ACTIVEMQ_CONFIG["topic"]
+        self.client_id = client_id or ACTIVEMQ_CONFIG["client_id"]
+        self.subscription_name = subscription_name or ACTIVEMQ_CONFIG["subscription_name"]
         
         self.conn = stomp.Connection10(
             host_and_ports=[(self.host, self.port)]
@@ -129,16 +140,24 @@ class ActiveMQConsumer:
         self.running = False
         
     def connect(self):
-        """Connect to ActiveMQ broker using STOMP 1.0"""
+        """Connect to ActiveMQ broker using STOMP 1.0 with durable subscription support"""
         try:
+            # Connect with client-id for durable subscriptions
+            # Client ID is required for durable subscriptions to work
+            connect_headers = {'client-id': self.client_id}
+            
             if self.username and self.password:
                 self.conn.connect(
                     username=self.username,
                     passcode=self.password,
-                    wait=True
+                    wait=True,
+                    headers=connect_headers
                 )
             else:
-                self.conn.connect(wait=True)
+                self.conn.connect(
+                    wait=True,
+                    headers=connect_headers
+                )
             
             if not self.conn.is_connected():
                 logger.error(f"Connection failed. Check if STOMP is enabled on port {self.port}")
@@ -146,7 +165,7 @@ class ActiveMQConsumer:
                 return False
                 
             self.connected = True
-            logger.info(f"Connected to ActiveMQ at {self.host}:{self.port} (STOMP 1.0)")
+            logger.info(f"Connected to ActiveMQ at {self.host}:{self.port} (STOMP 1.0, Client ID: {self.client_id})")
             return True
         except Exception as e:
             logger.error(f"Failed to connect to ActiveMQ: {e}")
@@ -154,7 +173,7 @@ class ActiveMQConsumer:
             return False
             
     def subscribe(self):
-        """Subscribe to the configured topic using STOMP 1.0"""
+        """Subscribe to the configured topic using STOMP 1.0 with durable subscription"""
         if not self.connected:
             logger.error("Cannot subscribe - not connected to broker")
             return False
@@ -162,13 +181,21 @@ class ActiveMQConsumer:
         try:
             topic_path = f"/topic/{self.topic}" if not self.topic.startswith("/") else self.topic
             
+            # Durable subscription headers - messages stored when consumer is offline
+            subscribe_headers = {
+                'activemq.subscriptionName': self.subscription_name,
+                'activemq.durableSubscriptionName': self.subscription_name
+            }
+            
             self.conn.subscribe(
                 destination=topic_path,
                 id=1,
-                ack='auto'
+                ack='auto',
+                headers=subscribe_headers
             )
             self.subscribed = True
-            logger.info(f"Subscribed to topic: {topic_path}")
+            logger.info(f"Subscribed to topic: {topic_path} (Durable: {self.subscription_name})")
+            logger.info("Messages will be stored when consumer is offline and delivered on reconnect")
             return True
         except Exception as e:
             logger.error(f"Failed to subscribe to topic: {e}", exc_info=True)
@@ -187,16 +214,28 @@ class ActiveMQConsumer:
         except Exception as e:
             logger.error(f"Failed to unsubscribe: {e}", exc_info=True)
             
-    def disconnect(self):
-        """Disconnect from ActiveMQ broker using STOMP 1.0"""
-        if self.subscribed:
+    def disconnect(self, keep_durable_subscription: bool = True):
+        """
+        Disconnect from ActiveMQ broker using STOMP 1.0
+        
+        Args:
+            keep_durable_subscription: If True, keeps durable subscription active
+                                      so messages are stored while offline
+        """
+        # For durable subscriptions, don't unsubscribe when disconnecting
+        # This allows messages to be stored while consumer is offline
+        if self.subscribed and not keep_durable_subscription:
             self.unsubscribe()
             
         if self.connected:
             try:
                 self.conn.disconnect()
                 self.connected = False
-                logger.info("Disconnected from ActiveMQ broker")
+                if keep_durable_subscription:
+                    logger.info(f"Disconnected from ActiveMQ broker (durable subscription '{self.subscription_name}' remains active)")
+                    logger.info("Messages sent while offline will be stored and delivered on reconnect")
+                else:
+                    logger.info("Disconnected from ActiveMQ broker")
             except Exception as e:
                 logger.error(f"Error disconnecting: {e}", exc_info=True)
                 
@@ -242,11 +281,17 @@ class ActiveMQConsumer:
             
         return True
         
-    def stop(self):
-        """Stop the consumer"""
+    def stop(self, keep_durable_subscription: bool = True):
+        """
+        Stop the consumer
+        
+        Args:
+            keep_durable_subscription: If True, keeps durable subscription active
+                                      so messages are stored while offline (default: True)
+        """
         logger.info("Stopping consumer...")
         self.running = False
-        self.disconnect()
+        self.disconnect(keep_durable_subscription=keep_durable_subscription)
 
 
 def default_message_handler(headers: dict, body: str):

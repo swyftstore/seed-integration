@@ -39,5 +39,7 @@ ACTIVEMQ_CONFIG = {
     "stomp_port": int(os.getenv("ACTIVEMQ_PORT", "61613")),  # STOMP port (default: 61613 - standard STOMP port)
     "username": os.getenv("ACTIVEMQ_USERNAME", ""),
     "password": os.getenv("ACTIVEMQ_PASSWORD", ""),
-    "topic": os.getenv("ACTIVEMQ_TOPIC", "com.zoomsystems.common.PythonConsumerTopic")
+    "topic": os.getenv("ACTIVEMQ_TOPIC", "com.zoomsystems.common.PythonConsumerTopic"),
+    "client_id": os.getenv("ACTIVEMQ_CLIENT_ID", "python-consumer-client"),
+    "subscription_name": os.getenv("ACTIVEMQ_SUBSCRIPTION_NAME", "python-consumer-durable-sub")
 }
