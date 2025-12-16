@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 import os
 from dotenv import load_dotenv
 from utils import parse_seed_markets_soap, parse_seed_products_soap
-from gcp_utils import TABLES, load_to_bigquery, bq_get_markets, bq_get_stores, save_store_market_mapping
+from gcp_utils import TABLES, load_to_bigquery, bq_get_markets, bq_get_stores, save_store_market_mapping, get_store_market_mappings_current, delete_store_market_mapping
 
 load_dotenv()
 
@@ -54,6 +54,25 @@ def save_map(payload: dict):
 
     errors = save_store_market_mapping(estation_name, market_id, user_email, user_role)
     return errors
+
+@app.get("/store-market-map/current")
+def get_current_mappings(request: Request):
+    # user = verify_token(request)
+
+    return get_store_market_mappings_current()
+
+@app.post("/store-market-map/delete")
+def delete_mapping(request: Request, payload: dict):
+    # user = verify_token(request)
+    # if user["role"] != "admin":
+    #     raise HTTPException(403, "Admin only")
+
+    store_id = payload["store_name"]
+    user_email = "praveen.yalal@swyft.com" # user["email"]
+    user_role = "admin" # user["role"]
+
+    return delete_store_market_mapping(store_id, user_email, user_role)
+
 
 # ---------- SOAP HANDLER ----------
 @app.post("/vdi/seed", response_class=Response)

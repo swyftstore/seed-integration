@@ -68,15 +68,7 @@ SCHEMA_DATA = {
         bigquery.SchemaField("market_id", "STRING"),
         bigquery.SchemaField("updated_at", "TIMESTAMP"),
         bigquery.SchemaField("updated_by", "STRING"),
-        bigquery.SchemaField("deleted", "TIMESTAMP")
-    ],
-    "vdi_store_market_mapping_history":
-    [
-        bigquery.SchemaField("entry_id", "INT64"),
-        bigquery.SchemaField("estation_name", "STRING"),
-        bigquery.SchemaField("market_id", "STRING"),
-        bigquery.SchemaField("updated_at", "TIMESTAMP"),
-        bigquery.SchemaField("updated_by", "STRING"),
+        bigquery.SchemaField("deleted", "TIMESTAMP"),
         bigquery.SchemaField("action", "STRING")
     ]
 
@@ -203,42 +195,23 @@ def delete_store_market_mapping(store_id, user_email, user_role):
     if user_role != "admin":
         return {"status": "blocked", "reason": "Admin only"}
 
-    now_ts = datetime.now(timezone.utc)
+    now_ts = datetime.now(timezone.utc).isoformat()
 
     existing_market = get_active_store_mapping(store_id)
     if not existing_market:
         return {"status": "not_found"}
 
-    # 🧾 HISTORY
     client.insert_rows_json(
-        f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping_history",
+        f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping",
         [{
             "estation_name": store_id,
             "market_id": existing_market,
             "updated_by": user_email,
             "updated_at": now_ts,
+            "deleted": now_ts,
             "action": "DELETE"
         }]
     )
-
-    # 🧹 SOFT DELETE
-    delete_query = f"""
-    UPDATE `{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping`
-    SET deleted = @deleted
-    WHERE estation_name = @store_id
-      AND deleted IS NULL
-    """
-
-    client.query(
-        delete_query,
-        bigquery.QueryJobConfig(
-            query_parameters=[
-                bigquery.ScalarQueryParameter("store_id", "STRING", store_id),
-                bigquery.ScalarQueryParameter("deleted", "TIMESTAMP", now_ts)
-            ]
-        )
-    ).result()
-
     return {"status": "deleted", "store": store_id}
 
 def save_store_market_mapping(store_id, market_id, user_email, user_role):
@@ -253,24 +226,11 @@ def save_store_market_mapping(store_id, market_id, user_email, user_role):
 
 
     # ❌ Viewer cannot overwrite
-    if existing_market:
+    if existing_market and user_role != 'admin':
         return {
             "status": "blocked",
             "reason": f"Store already mapped to {existing_market}"
         }
-
-    # 🧾 HISTORY
-    history_action = "UPDATE" if existing_market else "INSERT"
-    client.insert_rows_json(
-        f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping_history",
-        [{
-            "estation_name": store_id,
-            "market_id": market_id,
-            "updated_by": user_email,
-            "updated_at": now_ts,
-            "action": history_action
-        }]
-    )
 
     # SOFT DELETE OLD MAPPING (append-only marker)
     if existing_market:
@@ -281,7 +241,8 @@ def save_store_market_mapping(store_id, market_id, user_email, user_role):
                 "market_id": existing_market,
                 "updated_by": user_email,
                 "updated_at": now_ts,
-                "deleted": now_ts
+                "deleted": now_ts,
+                "action": "DELETE"
             }]
         )
 
@@ -293,18 +254,31 @@ def save_store_market_mapping(store_id, market_id, user_email, user_role):
             "market_id": market_id,
             "updated_by": user_email,
             "updated_at": now_ts,
-            "deleted": None
+            "deleted": None,
+            "action": "INSERT"
         }]
     )
 
     return {
-        "status": history_action.lower(),
+        "status": "SUCCESS",
         "store": store_id,
         "market": market_id
     }
+
+def get_store_market_mappings_current():
+    query = f"""
+    SELECT
+      estation_name,
+      market_id,
+      updated_by,
+      updated_at
+    FROM `{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping_current`
+    ORDER BY updated_at DESC
+    """
+    rows = client.query(query)
+    return [dict(r) for r in rows]
 
 if __name__ == "__main__":
     create_table(f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_markets_info")
     create_table(f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_products")
     create_table(f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping")
-    create_table(f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping_history")
