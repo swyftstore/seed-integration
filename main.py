@@ -1,16 +1,21 @@
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import Response
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
 
 import xml.etree.ElementTree as ET
 import os
 from dotenv import load_dotenv
 from utils import parse_seed_markets_soap, parse_seed_products_soap
-from gcp_utils import TABLES, load_to_bigquery
+from gcp_utils import TABLES, load_to_bigquery, bq_get_markets, bq_get_stores, save_store_market_mapping
 
 load_dotenv()
 
 app = FastAPI(title="Seed VDI Receiver", version="1.0")
+
+templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 security = HTTPBasic()
 
@@ -23,6 +28,32 @@ def verify_auth(credentials: HTTPBasicCredentials = Depends(security)):
         raise HTTPException(status_code=401, detail="Unauthorized")
     return credentials.username
 
+@app.get("/ui/store-market-map")
+def store_market_map_page(request: Request):
+    return templates.TemplateResponse(
+        "store_market_map.html",
+        {"request": request}
+    )
+
+@app.get("/stores")
+def get_stores():
+    data = bq_get_stores()
+    return data
+
+@app.get("/markets")
+def get_markets():
+    data = bq_get_markets()
+    return data
+
+@app.post("/store-market-map")
+def save_map(payload: dict):
+    estation_name = payload["estation_name"]
+    market_id = payload["market_id"]
+    user_email = "praveen@swyft.com" # payload["user_email"]
+    user_role = "admin" # payload["user_role"]
+
+    errors = save_store_market_mapping(estation_name, market_id, user_email, user_role)
+    return errors
 
 # ---------- SOAP HANDLER ----------
 @app.post("/vdi/seed", response_class=Response)

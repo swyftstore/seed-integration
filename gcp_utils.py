@@ -1,9 +1,12 @@
 from google.cloud import bigquery
 from google.oauth2 import service_account
 from pandas_gbq import to_gbq
+from datetime import datetime, timezone
+
 
 PROJECT_ID = "zoom-shops-dev"
-DATASET_ID = "cantaloupe_seed"
+SWYFT_DATASET_ID = "zoom_dw_dev"
+SEED_DATASET_ID = "cantaloupe_seed"
 KEY_PATH = "/Users/praveenkumar/Projects/Swyft/platform/misc/zoom-shops-dev-SA.json"
 
 MAKETS_TABLE = "vdi_markets_info"
@@ -12,8 +15,9 @@ PRODUCTS_TABLE = "vdi_products"
 client = bigquery.Client(project=PROJECT_ID)
 
 TABLES = {
-    "vdi_markets_info": f"{PROJECT_ID}.{DATASET_ID}.vdi_markets_info",
-    "vdi_products": f"{PROJECT_ID}.{DATASET_ID}.vdi_products"
+    "vdi_markets_info": f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_markets_info",
+    "vdi_products": f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_products",
+    "vdi_store_market_mapping": f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping"
 }
 
 SCHEMA_DATA = {
@@ -53,6 +57,27 @@ SCHEMA_DATA = {
         bigquery.SchemaField("FeeName", "STRING"),
         bigquery.SchemaField("FeeValue", "FLOAT"),
         bigquery.SchemaField("IsTaxable", "BOOLEAN")
+    ],
+
+    # ------------------------------
+    # vdi_store_market_mapping: store market mapping
+    # ------------------------------
+    "vdi_store_market_mapping":
+    [
+        bigquery.SchemaField("estation_name", "STRING"),
+        bigquery.SchemaField("market_id", "STRING"),
+        bigquery.SchemaField("updated_at", "TIMESTAMP"),
+        bigquery.SchemaField("updated_by", "STRING"),
+        bigquery.SchemaField("deleted", "TIMESTAMP")
+    ],
+    "vdi_store_market_mapping_history":
+    [
+        bigquery.SchemaField("entry_id", "INT64"),
+        bigquery.SchemaField("estation_name", "STRING"),
+        bigquery.SchemaField("market_id", "STRING"),
+        bigquery.SchemaField("updated_at", "TIMESTAMP"),
+        bigquery.SchemaField("updated_by", "STRING"),
+        bigquery.SchemaField("action", "STRING")
     ]
 
 }
@@ -137,6 +162,149 @@ def create_table(table_id: str):
     else:
         print(f"✔ Schema already up to date: {table_id}")
 
+def bq_get_stores():
+    query = f"SELECT concept_name, estation_name FROM {PROJECT_ID}.{SWYFT_DATASET_ID}.07_live_stores ORDER BY estation_name limit 10"
+    df = client.query(query).to_dataframe()
+    records = df.to_dict(orient="records")
+    return records
+
+def bq_get_markets():
+    query = f"SELECT MarketID as market_id, MarketName as market_name FROM {PROJECT_ID}.{SEED_DATASET_ID}.{MAKETS_TABLE} ORDER BY market_name"
+    df = client.query(query).to_dataframe()
+    records = df.to_dict(orient="records")
+    return records
+
+def save_store_market_mapping(store_id, market_id):
+    rows = [{
+        "estation_name": store_id,
+        "market_id": market_id,
+        "updated_at": datetime.now(),
+        "updated_by": "system"
+    }]
+    response = client.insert_rows_json(f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping", rows)
+    return response
+
+def get_active_store_mapping(store_id):
+    query = f"""
+    SELECT market_id 
+    FROM `{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping` 
+    WHERE estation_name = @store_id AND deleted IS NULL 
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY estation_name ORDER BY updated_at DESC) = 1 
+    """
+    job_config = bigquery.QueryJobConfig(query_parameters=[
+        bigquery.ScalarQueryParameter("store_id", "STRING", store_id)
+    ])
+    rows = list(client.query(query, job_config))
+    market_id = rows[0].market_id if rows else None
+    print("store: %s mapped to market: %s" % (store_id, market_id))
+    return market_id
+
+def delete_store_market_mapping(store_id, user_email, user_role):
+    if user_role != "admin":
+        return {"status": "blocked", "reason": "Admin only"}
+
+    now_ts = datetime.now(timezone.utc)
+
+    existing_market = get_active_store_mapping(store_id)
+    if not existing_market:
+        return {"status": "not_found"}
+
+    # 🧾 HISTORY
+    client.insert_rows_json(
+        f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping_history",
+        [{
+            "estation_name": store_id,
+            "market_id": existing_market,
+            "updated_by": user_email,
+            "updated_at": now_ts,
+            "action": "DELETE"
+        }]
+    )
+
+    # 🧹 SOFT DELETE
+    delete_query = f"""
+    UPDATE `{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping`
+    SET deleted = @deleted
+    WHERE estation_name = @store_id
+      AND deleted IS NULL
+    """
+
+    client.query(
+        delete_query,
+        bigquery.QueryJobConfig(
+            query_parameters=[
+                bigquery.ScalarQueryParameter("store_id", "STRING", store_id),
+                bigquery.ScalarQueryParameter("deleted", "TIMESTAMP", now_ts)
+            ]
+        )
+    ).result()
+
+    return {"status": "deleted", "store": store_id}
+
+def save_store_market_mapping(store_id, market_id, user_email, user_role):
+    now_ts = datetime.now(timezone.utc).isoformat()
+
+    existing_market = get_active_store_mapping(store_id)
+
+    if existing_market and market_id == existing_market:
+        return {
+            "status": "Mapped Exists !!!"
+        }
+
+
+    # ❌ Viewer cannot overwrite
+    if existing_market:
+        return {
+            "status": "blocked",
+            "reason": f"Store already mapped to {existing_market}"
+        }
+
+    # 🧾 HISTORY
+    history_action = "UPDATE" if existing_market else "INSERT"
+    client.insert_rows_json(
+        f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping_history",
+        [{
+            "estation_name": store_id,
+            "market_id": market_id,
+            "updated_by": user_email,
+            "updated_at": now_ts,
+            "action": history_action
+        }]
+    )
+
+    # SOFT DELETE OLD MAPPING (append-only marker)
+    if existing_market:
+        client.insert_rows_json(
+            f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping",
+            [{
+                "estation_name": store_id,
+                "market_id": existing_market,
+                "updated_by": user_email,
+                "updated_at": now_ts,
+                "deleted": now_ts
+            }]
+        )
+
+    # ➕ INSERT NEW ACTIVE ROW
+    client.insert_rows_json(
+        f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping",
+        [{
+            "estation_name": store_id,
+            "market_id": market_id,
+            "updated_by": user_email,
+            "updated_at": now_ts,
+            "deleted": None
+        }]
+    )
+
+    return {
+        "status": history_action.lower(),
+        "store": store_id,
+        "market": market_id
+    }
+
 if __name__ == "__main__":
-    create_table("vdi_markets_info")
-    create_table("vdi_products")
+    create_table(f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_markets_info")
+    create_table(f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_products")
+    create_table(f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping")
+    create_table(f"{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping_history")
