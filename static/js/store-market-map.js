@@ -19,8 +19,8 @@ function initPage() {
 window.logout = () => signOut(auth).then(() => location.href = "/login");
 
 async function loadData() {
-    const stores = await fetch("/stores").then(r => r.json());
-    const markets = await fetch("/markets").then(r => r.json());
+    const stores = await authFetch("/stores").then(r => r.json());
+    const markets = await authFetch("/markets").then(r => r.json());
 
     const marketOptions = markets
         .map(m => `<option value="${m.market_id}">${m.market_name} (ID: ${m.market_id})</option>`)
@@ -60,7 +60,7 @@ async function loadData() {
 
 // ---------- CURRENT MAPPINGS ----------
 async function loadCurrentMappings() {
-    const data = await fetch("/store-market-map/current").then(r => r.json());
+    const data = await authFetch("/store-market-map/current").then(r => r.json());
 
     const tbody = document.getElementById("mappingTableBody");
     tbody.innerHTML = "";
@@ -114,7 +114,7 @@ window.saveMapping = async() => {
 
     const body = { estation_name: storeId, market_id: marketId };
 
-    const resp = await fetch("/store-market-map", {
+    const resp = await authFetch("/store-market-map", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
@@ -130,10 +130,10 @@ window.saveMapping = async() => {
     setTimeout(loadCurrentMappings, 3000);
 }
 
-async function deleteMapping(storeName) {
+window.deleteMapping = async(storeName) => {
     if (!confirm(`Delete mapping for ${storeName}?`)) return;
 
-    const resp = await fetch("/store-market-map/delete", {
+    const resp = await authFetch("/store-market-map/delete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ store_name: storeName })

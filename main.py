@@ -1,11 +1,13 @@
+import os
+import xml.etree.ElementTree as ET
+
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.responses import Response
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
+from firebase_admin import auth as firebase_auth
 
-import xml.etree.ElementTree as ET
-import os
 from dotenv import load_dotenv
 from utils import parse_seed_markets_soap, parse_seed_products_soap
 from gcp_utils import TABLES, load_to_bigquery, bq_get_markets, bq_get_stores, save_store_market_mapping, get_store_market_mappings_current, delete_store_market_mapping
@@ -28,12 +30,25 @@ def verify_auth(credentials: HTTPBasicCredentials = Depends(security)):
         raise HTTPException(status_code=401, detail="Unauthorized")
     return credentials.username
 
+def verify_token(request: Request):
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(401, "Missing auth header")
+
+    token = auth_header.replace("Bearer ", "").strip()
+    try:
+        decoded = firebase_auth.verify_id_token(token)
+        return decoded
+    except Exception:
+        raise HTTPException(401, "Invalid token")
+
+@app.get("/login")
+def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
 @app.get("/ui/store-market-map")
 def store_market_map_page(request: Request):
-    return templates.TemplateResponse(
-        "store_market_map.html",
-        {"request": request}
-    )
+    return templates.TemplateResponse("store_market_map.html", {"request": request})
 
 @app.get("/stores")
 def get_stores():
@@ -57,19 +72,19 @@ def save_map(payload: dict):
 
 @app.get("/store-market-map/current")
 def get_current_mappings(request: Request):
-    # user = verify_token(request)
+    user = verify_token(request)
 
     return get_store_market_mappings_current()
 
 @app.post("/store-market-map/delete")
 def delete_mapping(request: Request, payload: dict):
-    # user = verify_token(request)
-    # if user["role"] != "admin":
-    #     raise HTTPException(403, "Admin only")
+    user = verify_token(request)
+    if user["role"] != "admin":
+        raise HTTPException(403, "Admin only")
 
     store_id = payload["store_name"]
-    user_email = "praveen.yalal@swyft.com" # user["email"]
-    user_role = "admin" # user["role"]
+    user_email = user["email"]
+    user_role = user["role"]
 
     return delete_store_market_mapping(store_id, user_email, user_role)
 

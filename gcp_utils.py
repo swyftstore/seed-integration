@@ -3,6 +3,9 @@ from google.oauth2 import service_account
 from pandas_gbq import to_gbq
 from datetime import datetime, timezone
 
+import firebase_admin
+from firebase_admin import auth as firebase_auth
+from firebase_admin import credentials
 
 PROJECT_ID = "zoom-shops-dev"
 SWYFT_DATASET_ID = "zoom_dw_dev"
@@ -11,6 +14,10 @@ KEY_PATH = "/Users/praveenkumar/Projects/Swyft/platform/misc/zoom-shops-dev-SA.j
 
 MAKETS_TABLE = "vdi_markets_info"
 PRODUCTS_TABLE = "vdi_products"
+
+if not firebase_admin._apps:
+    cred = credentials.Certificate(KEY_PATH)
+    firebase_admin.initialize_app(cred)
 
 client = bigquery.Client(project=PROJECT_ID)
 
@@ -179,9 +186,9 @@ def save_store_market_mapping(store_id, market_id):
 def get_active_store_mapping(store_id):
     query = f"""
     SELECT market_id 
-    FROM `{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping` 
-    WHERE estation_name = @store_id AND deleted IS NULL 
-    QUALIFY ROW_NUMBER() OVER (PARTITION BY estation_name ORDER BY updated_at DESC) = 1 
+    FROM `{PROJECT_ID}.{SEED_DATASET_ID}.vdi_store_market_mapping_current` 
+    WHERE estation_name = @store_id 
+    ORDER BY updated_at DESC
     """
     job_config = bigquery.QueryJobConfig(query_parameters=[
         bigquery.ScalarQueryParameter("store_id", "STRING", store_id)
